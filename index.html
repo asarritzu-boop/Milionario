@@ -169,7 +169,7 @@
                 <h1 class="logo">CHI VUOL ESSERE<br>MILIONARIO?</h1>
                 <div class="menu-grid">
                     <button class="action-btn full-row" onclick="startGame()">GIOCA ORA</button>
-                    <button class="action-btn" onclick="shareApp()"><i class="fas fa-share-alt"></i> Condividi</button>
+                    <button class="action-btn" onclick="shareApp()"><i class="fab fa-whatsapp"></i> Condividi</button>
                     <button class="action-btn" onclick="downloadAPK()"><i class="fab fa-android"></i> Scarica APK</button>
                     <button class="action-btn full-row" id="theme-btn" onclick="nextTheme()">Tema: Classic TV</button>
                 </div>
@@ -228,7 +228,7 @@
             <ul style="line-height: 1.5;">
                 <li><b>50:50</b>: Elimina due delle tre risposte sbagliate.</li>
                 <li><b>? (Suggerimento)</b>: Fornisce un indizio testuale.</li>
-                <li><b>⇄ (Cambio)</b>: Passa alla prossima domanda senza perdere premi.</li>
+                <li><b>⇄ (Cambio)</b>: Sostituisce la domanda corrente con un'altra dello stesso livello.</li>
                 <li><b>TRAGUARDI</b>: Domande 5 e 10 garantiscono il premio raggiunto.</li>
             </ul>
             <button class="action-btn full-row" onclick="toggleInstructions(false)">HO CAPITO</button>
@@ -236,7 +236,7 @@
     </div>
 
     <script>
-        /* --- LOGICA FULL SCREEN RIPRISTINATA --- */
+        /* --- LOGICA FULL SCREEN --- */
         function toggleFullScreen() {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch(() => {});
@@ -248,6 +248,7 @@
         document.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); toggleFullScreen(); } });
 
         const prizes = ["€ 500", "€ 1.000", "€ 2.000", "€ 3.000", "€ 5.000", "€ 7.000", "€ 10.000", "€ 15.000", "€ 25.000", "€ 50.000", "€ 70.000", "€ 100.000", "€ 250.000", "€ 500.000", "€ 1.000.000"];
+        let allQuestionsRaw = []; // Store the full pool from JSON
         let questions = []; 
         let currentStep = 0;
         let lifelines = { s50: true, hint: true, sw: true };
@@ -269,12 +270,12 @@
             try {
                 const response = await fetch('questions.json');
                 if (!response.ok) throw new Error();
-                const allData = await response.json();
+                allQuestionsRaw = await response.json();
                 const shuffle = (array) => array.sort(() => Math.random() - 0.5);
 
-                const easy = shuffle(allData.filter(q => q.level === 1));
-                const medium = shuffle(allData.filter(q => q.level === 2));
-                const hard = shuffle(allData.filter(q => q.level === 3));
+                const easy = shuffle(allQuestionsRaw.filter(q => q.level === 1));
+                const medium = shuffle(allQuestionsRaw.filter(q => q.level === 2));
+                const hard = shuffle(allQuestionsRaw.filter(q => q.level === 3));
 
                 questions = [...easy.slice(0, 5), ...medium.slice(0, 5), ...hard.slice(0, 5)];
                 questions.forEach((q, i) => {
@@ -285,7 +286,8 @@
                 questions = prizes.map((p, i) => ({
                     q: "Domanda di test livello " + (i+1),
                     o: ["Errata", "Errata", "Corretta", "Errata"],
-                    c: 2, p: p, h: "Aiuto...", m: (i===4||i===9||i===14)
+                    c: 2, p: p, h: "Aiuto...", m: (i===4||i===9||i===14),
+                    level: i < 5 ? 1 : (i < 10 ? 2 : 3)
                 }));
             }
         }
@@ -351,6 +353,7 @@
 
         function toggleInstructions(show) { document.getElementById('instructions-modal').style.display = show ? 'flex' : 'none'; }
         function goHome() { if(confirm("Abbandonare?")) location.reload(); }
+        
         function use5050() {
             if (!lifelines.s50) return;
             const data = questions[currentStep];
@@ -359,17 +362,36 @@
             pool.slice(0, 2).forEach(i => btns[i].classList.add('hidden-opt'));
             lifelines.s50 = false; document.getElementById('l-50').disabled = true;
         }
+
         function useHint() {
             if (!lifelines.hint) return;
             alert("SUGGERIMENTO: " + questions[currentStep].h);
             lifelines.hint = false; document.getElementById('l-hint').disabled = true;
         }
+
         function useSwitch() {
             if (!lifelines.sw) return;
-            currentStep++;
-            if (currentStep < 15) loadQuestion();
-            else endGame(true);
-            lifelines.sw = false; document.getElementById('l-sw').disabled = true;
+            
+            // Get current level (1, 2, or 3)
+            const currentLevel = questions[currentStep].level;
+            
+            // Filter a pool of questions from the same level that are NOT the current one
+            const sameLevelPool = allQuestionsRaw.filter(q => q.level === currentLevel && q.q !== questions[currentStep].q);
+            
+            if(sameLevelPool.length > 0) {
+                const newQuestion = sameLevelPool[Math.floor(Math.random() * sameLevelPool.length)];
+                // Maintain prize and milestone metadata
+                newQuestion.p = prizes[currentStep];
+                newQuestion.m = (currentStep === 4 || currentStep === 9 || currentStep === 14);
+                // Replace current question in the array
+                questions[currentStep] = newQuestion;
+                loadQuestion();
+            } else {
+                alert("Nessun'altra domanda disponibile per questo livello.");
+            }
+            
+            lifelines.sw = false; 
+            document.getElementById('l-sw').disabled = true;
         }
 
         const themes = ['theme-classic', 'theme-cyber', 'theme-matrix', 'theme-synth', 'theme-dark'];
