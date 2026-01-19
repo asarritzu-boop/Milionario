@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta id="theme-meta" name="theme-color" content="#02114d">
     
+    <meta property="og:title" content="Millionaire Quiz Classic">
+    <meta property="og:description" content="Riuscirai a scalare la vetta e diventare milionario? Metti alla prova la tua cultura generale!">
+    <meta property="og:image" content="icona.png">
+    <meta property="og:type" content="website">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Millionaire Quiz Classic">
+    <meta name="twitter:description" content="Riuscirai a scalare la vetta e diventare milionario?">
+    <meta name="twitter:image" content="icona.png">
+
     <link rel="icon" type="image/png" href="icona.png">
     <link rel="apple-touch-icon" href="icona.png">
 
@@ -247,8 +257,8 @@
         document.addEventListener('dblclick', (e) => { if (e.target.tagName !== 'BUTTON') toggleFullScreen(); });
         document.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); toggleFullScreen(); } });
 
-        const prizes = ["€ 500", "€ 1.000", "€ 2.000", "€ 3.000", "€ 5.000", "€ 7.000", "€ 10.000", "€ 15.000", "€ 25.000", "€ 50.000", "€ 70.000", "€ 100.000", "€ 250.000", "€ 500.000", "€ 1.000.000"];
-        let allQuestionsRaw = []; // Store the full pool from JSON
+        const prizes = ["€ 500", "€ 1.000", "€ 2.000", "€ 3.000", "€ 5.000", "€ 7.000", "€ 10.000", "€ 15.000", "€ 25.000", "€ 50.000", "€ 70.000", "€ 100.000", "€ 250.000", "€ 50.000.000", "€ 1.000.000"];
+        let allQuestionsRaw = []; 
         let questions = []; 
         let currentStep = 0;
         let lifelines = { s50: true, hint: true, sw: true };
@@ -371,25 +381,17 @@
 
         function useSwitch() {
             if (!lifelines.sw) return;
-            
-            // Get current level (1, 2, or 3)
             const currentLevel = questions[currentStep].level;
-            
-            // Filter a pool of questions from the same level that are NOT the current one
             const sameLevelPool = allQuestionsRaw.filter(q => q.level === currentLevel && q.q !== questions[currentStep].q);
-            
             if(sameLevelPool.length > 0) {
                 const newQuestion = sameLevelPool[Math.floor(Math.random() * sameLevelPool.length)];
-                // Maintain prize and milestone metadata
                 newQuestion.p = prizes[currentStep];
                 newQuestion.m = (currentStep === 4 || currentStep === 9 || currentStep === 14);
-                // Replace current question in the array
                 questions[currentStep] = newQuestion;
                 loadQuestion();
             } else {
                 alert("Nessun'altra domanda disponibile per questo livello.");
             }
-            
             lifelines.sw = false; 
             document.getElementById('l-sw').disabled = true;
         }
@@ -405,7 +407,21 @@
             document.getElementById('theme-btn').innerText = "Tema: " + themeNames[tIdx];
             document.getElementById('theme-meta').setAttribute("content", themeColors[tIdx]);
         }
-        function shareApp() { if (navigator.share) navigator.share({ title: 'Millionaire Quiz', url: window.location.href }); }
+
+        function shareApp() { 
+            if (navigator.share) { 
+                navigator.share({ 
+                    title: 'Millionaire Quiz Classic', 
+                    text: 'Riuscirai a diventare milionario? Gioca ora!',
+                    url: window.location.href 
+                }).catch(() => {});
+            } else {
+                // Fallback nel caso l'API share non sia supportata
+                const url = window.location.href;
+                window.open(`https://api.whatsapp.com/send?text=Gioca a Millionaire Quiz Classic: ${url}`, '_blank');
+            }
+        }
+
         function downloadAPK() { alert("Download avviato..."); }
     </script>
 </body>
