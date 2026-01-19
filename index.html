@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta id="theme-meta" name="theme-color" content="#02114d">
+    
+    <link rel="icon" type="image/png" href="icona.png">
+    <link rel="apple-touch-icon" href="icona.png">
+
+    <title>Millionaire Quiz Classic</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-deep: #000833;
+            --bg-light: #02114d;
+            --gold: #ffd700;
+            --blue-border: #4a90e2;
+            --btn-grad: linear-gradient(90deg, #000 0%, #2b45a0 50%, #000 100%);
+            --correct: #28a745;
+            --wrong: #dc3545;
+            --text: #ffffff;
+            --milestone: #ff8c00;
+        }
+
+        /* TEMI */
+        body.theme-cyber { --bg-deep: #020014; --gold: #00fff2; --blue-border: #ff00ff; --btn-grad: #000; }
+        body.theme-matrix { --bg-deep: #000; --gold: #0f0; --blue-border: #003300; --btn-grad: #001100; }
+        body.theme-synth { --bg-deep: #240046; --gold: #ff9e00; --blue-border: #ff00aa; --btn-grad: #3c096c; }
+        body.theme-dark { --bg-deep: #1a1a1a; --gold: #eee; --blue-border: #333; --btn-grad: #222; }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: radial-gradient(circle, var(--bg-light) 0%, var(--bg-deep) 100%);
+            background-attachment: fixed;
+            color: var(--text);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; overflow-x: hidden;
+            user-select: none;
+        }
+
+        #game-container {
+            width: 95%; max-width: 1100px; display: flex; gap: 20px; padding: 20px; align-items: stretch;
+        }
+
+        .main-game { flex: 3; text-align: center; }
+
+        #money-ladder {
+            flex: 1; background: rgba(0,0,0,0.8); border: 2px solid var(--blue-border);
+            border-radius: 15px; padding: 10px; display: flex; flex-direction: column-reverse;
+            justify-content: space-around; font-size: 0.9rem;
+        }
+
+        .step { 
+            padding: 5px 10px; 
+            border-radius: 5px; 
+            margin: 2px 0; 
+            color: #ffffff; 
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .step.milestone { 
+            color: var(--milestone) !important; 
+            font-weight: bold;
+        }
+
+        .step.active-step { 
+            background: var(--gold) !important; 
+            color: #000 !important; 
+            font-weight: bold; 
+        }
+
+        .progress-container {
+            width: 100%; height: 12px; background: rgba(255,255,255,0.1);
+            border-radius: 6px; margin-bottom: 20px; position: relative; border: 1px solid var(--blue-border);
+        }
+        #progress-bar {
+            height: 100%; width: 0%; background: var(--gold);
+            border-radius: 6px; transition: width 0.5s ease;
+        }
+        .milestone-marker {
+            position: absolute; top: -5px; width: 4px; height: 22px;
+            background: var(--milestone); z-index: 2;
+        }
+
+        .screen { display: none; flex-direction: column; align-items: center; width: 100%; }
+        .active { display: flex; }
+
+        h1.logo {
+            font-size: 3.5rem; color: var(--gold);
+            text-shadow: 3px 3px 10px rgba(0,0,0,0.8); margin-bottom: 10px;
+        }
+
+        .menu-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+            width: 100%; max-width: 500px; margin-top: 30px;
+        }
+
+        .action-btn {
+            background: var(--btn-grad); border: 2px solid var(--blue-border);
+            color: var(--text); padding: 15px; font-weight: bold;
+            cursor: pointer; border-radius: 30px; transition: 0.2s;
+            text-transform: uppercase;
+        }
+        .action-btn:hover { border-color: var(--gold); color: var(--gold); transform: scale(1.05); }
+        .full-row { grid-column: span 2; font-size: 1.2rem; border-color: var(--gold); }
+
+        .game-info {
+            display: flex; justify-content: space-between; width: 100%;
+            margin-bottom: 10px; color: var(--gold); font-weight: bold;
+        }
+
+        .lifelines { display: flex; gap: 15px; margin-bottom: 20px; }
+        .life-circle {
+            width: 55px; height: 55px; border-radius: 50%;
+            border: 2px solid var(--gold); background: black;
+            color: var(--gold); cursor: pointer; font-weight: bold;
+        }
+        .life-circle:disabled { opacity: 0.3; text-decoration: line-through; cursor: default; }
+
+        .question-box {
+            background: rgba(0,0,0,0.6); border: 2px solid var(--blue-border);
+            border-radius: 50px; padding: 25px 40px; margin-bottom: 30px;
+            font-size: 1.4rem; width: 100%; box-sizing: border-box;
+        }
+
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; }
+
+        .opt-btn {
+            background: var(--btn-grad); border: 1px solid var(--blue-border);
+            border-radius: 30px; padding: 18px 25px; color: var(--text);
+            text-align: left; font-size: 1.1rem; cursor: pointer;
+        }
+        .opt-btn span { color: var(--gold); font-weight: bold; margin-right: 15px; }
+
+        .service-btns { display: flex; gap: 10px; margin-top: 30px; width: 100%; max-width: 500px; }
+        .small-btn { flex: 1; font-size: 0.75rem; padding: 10px; background: rgba(0,0,0,0.4); }
+
+        #instructions-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: var(--bg-deep); border: 3px solid var(--gold);
+            padding: 30px; border-radius: 20px; max-width: 550px; width: 90%;
+            text-align: left;
+        }
+
+        .correct { background: var(--correct) !important; color: white !important; }
+        .wrong { background: var(--wrong) !important; color: white !important; }
+        .hidden-opt { visibility: hidden; pointer-events: none; }
+
+        @media (max-width: 800px) {
+            #money-ladder { display: none; }
+            .options-grid, .menu-grid { grid-template-columns: 1fr; }
+            .full-row { grid-column: span 1; }
+        }
+    </style>
+</head>
+<body class="theme-classic">
+
+    <div id="game-container">
+        <div class="main-game">
+            <div id="start-screen" class="screen active">
+                <h1 class="logo">CHI VUOL ESSERE<br>MILIONARIO?</h1>
+                <div class="menu-grid">
+                    <button class="action-btn full-row" onclick="startGame()">GIOCA ORA</button>
+                    <button class="action-btn" onclick="shareApp()"><i class="fas fa-share-alt"></i> Condividi</button>
+                    <button class="action-btn" onclick="downloadAPK()"><i class="fab fa-android"></i> Scarica APK</button>
+                    <button class="action-btn full-row" id="theme-btn" onclick="nextTheme()">Tema: Classic TV</button>
+                </div>
+                <p style="font-size: 0.8rem; margin-top: 20px; opacity: 0.7;">
+                    <i>Doppio tap o Barra Spaziatrice per Schermo Intero</i>
+                </p>
+            </div>
+
+            <div id="game-screen" class="screen">
+                <div class="game-info">
+                    <span>DOMANDA: <span id="ui-step">1</span>/15</span>
+                    <span>VINCITA: <span id="ui-prize">€ 0</span></span>
+                </div>
+
+                <div class="progress-container">
+                    <div id="progress-bar"></div>
+                    <div class="milestone-marker" style="left: 33.3%;"></div>
+                    <div class="milestone-marker" style="left: 66.6%;"></div>
+                </div>
+                
+                <div class="lifelines">
+                    <button id="l-50" class="life-circle" onclick="use5050()">50:50</button>
+                    <button id="l-hint" class="life-circle" onclick="useHint()">?</button>
+                    <button id="l-sw" class="life-circle" onclick="useSwitch()">⇄</button>
+                </div>
+
+                <div class="question-box" id="ui-question">Caricamento...</div>
+
+                <div class="options-grid">
+                    <button class="opt-btn" onclick="selectAnswer(0)"><span>A:</span> <span class="label"></span></button>
+                    <button class="opt-btn" onclick="selectAnswer(1)"><span>B:</span> <span class="label"></span></button>
+                    <button class="opt-btn" onclick="selectAnswer(2)"><span>C:</span> <span class="label"></span></button>
+                    <button class="opt-btn" onclick="selectAnswer(3)"><span>D:</span> <span class="label"></span></button>
+                </div>
+
+                <div class="service-btns">
+                    <button class="action-btn small-btn" onclick="toggleInstructions(true)">Istruzioni</button>
+                    <button class="action-btn small-btn" style="border-color: var(--wrong);" onclick="goHome()">Abbandona</button>
+                </div>
+            </div>
+
+            <div id="end-screen" class="screen">
+                <h2 id="end-message">FINE PARTITA</h2>
+                <p>Hai portato a casa:</p>
+                <h1 id="ui-final-prize" style="font-size: 4rem; color: var(--gold);">€ 0</h1>
+                <button class="action-btn full-row" onclick="location.reload()">NUOVA PARTITA</button>
+            </div>
+        </div>
+
+        <div id="money-ladder"></div>
+    </div>
+
+    <div id="instructions-modal">
+        <div class="modal-content">
+            <h3 style="text-align: center; color: var(--gold);">GUIDA AGLI AIUTI</h3>
+            <ul style="line-height: 1.5;">
+                <li><b>50:50</b>: Elimina due delle tre risposte sbagliate.</li>
+                <li><b>? (Suggerimento)</b>: Fornisce un indizio testuale.</li>
+                <li><b>⇄ (Cambio)</b>: Passa alla prossima domanda senza perdere premi.</li>
+                <li><b>TRAGUARDI</b>: Domande 5 e 10 garantiscono il premio raggiunto.</li>
+            </ul>
+            <button class="action-btn full-row" onclick="toggleInstructions(false)">HO CAPITO</button>
+        </div>
+    </div>
+
+    <script>
+        /* --- LOGICA FULL SCREEN RIPRISTINATA --- */
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+        document.addEventListener('dblclick', (e) => { if (e.target.tagName !== 'BUTTON') toggleFullScreen(); });
+        document.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); toggleFullScreen(); } });
+
+        const prizes = ["€ 500", "€ 1.000", "€ 2.000", "€ 3.000", "€ 5.000", "€ 7.000", "€ 10.000", "€ 15.000", "€ 25.000", "€ 50.000", "€ 70.000", "€ 100.000", "€ 250.000", "€ 500.000", "€ 1.000.000"];
+        let questions = []; 
+        let currentStep = 0;
+        let lifelines = { s50: true, hint: true, sw: true };
+
+        function initLadder() {
+            const ladder = document.getElementById('money-ladder');
+            ladder.innerHTML = '';
+            prizes.forEach((p, i) => {
+                const div = document.createElement('div');
+                const isMilestone = (i === 4 || i === 9 || i === 14);
+                div.className = 'step' + (isMilestone ? ' milestone' : '');
+                div.id = 'step-' + i;
+                div.innerHTML = `<span>${i + 1}</span> <span>${p}</span>`;
+                ladder.appendChild(div);
+            });
+        }
+
+        async function fetchQuestions() {
+            try {
+                const response = await fetch('questions.json');
+                if (!response.ok) throw new Error();
+                const allData = await response.json();
+                const shuffle = (array) => array.sort(() => Math.random() - 0.5);
+
+                const easy = shuffle(allData.filter(q => q.level === 1));
+                const medium = shuffle(allData.filter(q => q.level === 2));
+                const hard = shuffle(allData.filter(q => q.level === 3));
+
+                questions = [...easy.slice(0, 5), ...medium.slice(0, 5), ...hard.slice(0, 5)];
+                questions.forEach((q, i) => {
+                    q.p = prizes[i];
+                    q.m = (i === 4 || i === 9 || i === 14);
+                });
+            } catch (e) {
+                questions = prizes.map((p, i) => ({
+                    q: "Domanda di test livello " + (i+1),
+                    o: ["Errata", "Errata", "Corretta", "Errata"],
+                    c: 2, p: p, h: "Aiuto...", m: (i===4||i===9||i===14)
+                }));
+            }
+        }
+
+        async function startGame() {
+            initLadder();
+            await fetchQuestions();
+            document.getElementById('start-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const data = questions[currentStep];
+            document.getElementById('ui-question').innerText = data.q;
+            document.getElementById('ui-step').innerText = currentStep + 1;
+            document.getElementById('ui-prize').innerText = currentStep > 0 ? prizes[currentStep-1] : "€ 0";
+            document.getElementById('progress-bar').style.width = ((currentStep / 15) * 100) + "%";
+            
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active-step'));
+            const stepEl = document.getElementById('step-' + currentStep);
+            if(stepEl) stepEl.classList.add('active-step');
+
+            const btns = document.querySelectorAll('.opt-btn');
+            const labels = document.querySelectorAll('.label');
+            btns.forEach((btn, i) => {
+                btn.classList.remove('correct', 'wrong', 'hidden-opt');
+                btn.disabled = false;
+                labels[i].innerText = data.o[i];
+            });
+        }
+
+        function selectAnswer(idx) {
+            const data = questions[currentStep];
+            const btns = document.querySelectorAll('.opt-btn');
+            btns.forEach(b => b.disabled = true);
+            if (idx === data.c) {
+                btns[idx].classList.add('correct');
+                setTimeout(() => {
+                    currentStep++;
+                    if (currentStep < 15) loadQuestion();
+                    else endGame(true);
+                }, 1200);
+            } else {
+                btns[idx].classList.add('wrong');
+                btns[data.c].classList.add('correct');
+                setTimeout(() => endGame(false), 2000);
+            }
+        }
+
+        function endGame(win) {
+            document.getElementById('game-screen').classList.remove('active');
+            document.getElementById('end-screen').classList.add('active');
+            let finalPrize = "€ 0";
+            if (win) finalPrize = "€ 1.000.000";
+            else {
+                if (currentStep >= 10) finalPrize = prizes[9];
+                else if (currentStep >= 5) finalPrize = prizes[4];
+            }
+            document.getElementById('ui-final-prize').innerText = finalPrize;
+            document.getElementById('end-message').innerText = win ? "ECCEZIONALE! SEI MILIONARIO!" : "PECCATO, HAI SBAGLIATO!";
+        }
+
+        function toggleInstructions(show) { document.getElementById('instructions-modal').style.display = show ? 'flex' : 'none'; }
+        function goHome() { if(confirm("Abbandonare?")) location.reload(); }
+        function use5050() {
+            if (!lifelines.s50) return;
+            const data = questions[currentStep];
+            const btns = document.querySelectorAll('.opt-btn');
+            let pool = [0, 1, 2, 3].filter(i => i !== data.c).sort(() => Math.random() - 0.5);
+            pool.slice(0, 2).forEach(i => btns[i].classList.add('hidden-opt'));
+            lifelines.s50 = false; document.getElementById('l-50').disabled = true;
+        }
+        function useHint() {
+            if (!lifelines.hint) return;
+            alert("SUGGERIMENTO: " + questions[currentStep].h);
+            lifelines.hint = false; document.getElementById('l-hint').disabled = true;
+        }
+        function useSwitch() {
+            if (!lifelines.sw) return;
+            currentStep++;
+            if (currentStep < 15) loadQuestion();
+            else endGame(true);
+            lifelines.sw = false; document.getElementById('l-sw').disabled = true;
+        }
+
+        const themes = ['theme-classic', 'theme-cyber', 'theme-matrix', 'theme-synth', 'theme-dark'];
+        const themeNames = ['Classic TV', 'Cyber Neon', 'Matrix Green', 'Synthwave', 'Dark Minimal'];
+        const themeColors = ['#02114d', '#020014', '#000000', '#240046', '#1a1a1a'];
+        let tIdx = 0;
+        function nextTheme() {
+            document.body.classList.remove(themes[tIdx]);
+            tIdx = (tIdx + 1) % themes.length;
+            document.body.classList.add(themes[tIdx]);
+            document.getElementById('theme-btn').innerText = "Tema: " + themeNames[tIdx];
+            document.getElementById('theme-meta').setAttribute("content", themeColors[tIdx]);
+        }
+        function shareApp() { if (navigator.share) navigator.share({ title: 'Millionaire Quiz', url: window.location.href }); }
+        function downloadAPK() { alert("Download avviato..."); }
+    </script>
+</body>
+</html>
