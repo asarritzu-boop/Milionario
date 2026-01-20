@@ -11,7 +11,6 @@
 <meta property="og:image:width" content="300">
 <meta property="og:image:height" content="300">
     
-    
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Millionaire Quiz Classic">
     <meta name="twitter:description" content="Riuscirai a scalare la vetta e diventare milionario?">
@@ -166,10 +165,31 @@
         .wrong { background: var(--wrong) !important; color: white !important; }
         .hidden-opt { visibility: hidden; pointer-events: none; }
 
+        /* RESPONSIVE LANDSCAPE ADAPTIVE */
+        @media (orientation: landscape) and (max-height: 600px) {
+            #game-container {
+                padding: 5px;
+                transform: scale(0.85);
+                transform-origin: center center;
+            }
+            h1.logo { font-size: 2rem; margin-bottom: 5px; }
+            .question-box { padding: 15px 30px; margin-bottom: 15px; font-size: 1.1rem; }
+            .opt-btn { padding: 10px 20px; font-size: 0.9rem; }
+            .lifelines { margin-bottom: 10px; }
+            .life-circle { width: 40px; height: 40px; }
+            .menu-grid { margin-top: 10px; }
+            #money-ladder { font-size: 0.7rem; padding: 5px; }
+            .step { padding: 2px 8px; }
+        }
+
         @media (max-width: 800px) {
             #money-ladder { display: none; }
             .options-grid, .menu-grid { grid-template-columns: 1fr; }
             .full-row { grid-column: span 1; }
+        }
+        
+        @media (min-width: 801px) or (orientation: landscape) {
+            #money-ladder { display: flex; }
         }
     </style>
 </head>
@@ -227,7 +247,7 @@
                 <h2 id="end-message">FINE PARTITA</h2>
                 <p>Hai portato a casa:</p>
                 <h1 id="ui-final-prize" style="font-size: 4rem; color: var(--gold);">€ 0</h1>
-                <button class="action-btn full-row" onclick="location.reload()">NUOVA PARTITA</button>
+                <button class="action-btn full-row" onclick="goHome()">NUOVA PARTITA</button>
             </div>
         </div>
 
@@ -305,9 +325,15 @@
         }
 
         async function startGame() {
-            initLadder();
             await fetchQuestions();
+            currentStep = 0;
+            lifelines = { s50: true, hint: true, sw: true };
+            document.getElementById('l-50').disabled = false;
+            document.getElementById('l-hint').disabled = false;
+            document.getElementById('l-sw').disabled = false;
+            
             document.getElementById('start-screen').classList.remove('active');
+            document.getElementById('end-screen').classList.remove('active');
             document.getElementById('game-screen').classList.add('active');
             loadQuestion();
         }
@@ -364,7 +390,19 @@
         }
 
         function toggleInstructions(show) { document.getElementById('instructions-modal').style.display = show ? 'flex' : 'none'; }
-        function goHome() { if(confirm("Abbandonare?")) location.reload(); }
+        
+        function goHome() { 
+            if(document.getElementById('game-screen').classList.contains('active')) {
+                if(!confirm("Vuoi davvero abbandonare la partita?")) return;
+            }
+            // Reset interfacce
+            document.getElementById('game-screen').classList.remove('active');
+            document.getElementById('end-screen').classList.remove('active');
+            document.getElementById('start-screen').classList.add('active');
+            
+            // Reset logica scala premi
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active-step'));
+        }
         
         function use5050() {
             if (!lifelines.s50) return;
@@ -374,7 +412,6 @@
             pool.slice(0, 2).forEach(i => btns[i].classList.add('hidden-opt'));
             lifelines.s50 = false; document.getElementById('l-50').disabled = true;
         }
-
         function useHint() {
             if (!lifelines.hint) return;
             alert("SUGGERIMENTO: " + questions[currentStep].h);
@@ -423,11 +460,12 @@
             }
         }
 
-        // Funzione aggiornata per il download di CyberMilly.apk
         function downloadAPK() { 
             const apkUrl = 'https://asarritzu-boop.github.io/Milionario/CyberMilly.apk';
             window.location.href = apkUrl;
         }
+
+        initLadder();
     </script>
 </body>
 </html>
